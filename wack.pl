@@ -22,7 +22,11 @@ while (my ($k,$v) = each %wallet) {
     if ($type eq 'key') {
         my $privkey = unpack("H*", $v);
         $key = unpack("H*", $key);
-        #print "key=$key, privkey=$privkey\n";
+        print "key=$key, privkey=$privkey\n";
+    } elsif ($type eq 'zkey') {
+        my $privkey = unpack("H*", $v);
+        $key = unpack("H*", $key);
+        print "zkey=$key, privkey=$privkey\n";
     } elsif ($type eq 'name') {
         print "name: $key, $v\n";
     } elsif ($type eq 'bestblock') {
