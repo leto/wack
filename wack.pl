@@ -30,15 +30,20 @@ while (my ($k,$v) = each %wallet) {
     } elsif ($type eq 'name') {
         print "name: $key, $v\n";
     } elsif ($type eq 'bestblock') {
-        print "bestblock:\nbestblock: $key, $v\n";
+        my $len = length $v;
+        print "bestblock ($len bytes):\nbestblock: $key, $v\n";
     } elsif ($type eq 'version') {
         my $version = unpack("I", $v);
         print "version: $version\n";
+    } else {
+        my $len = length $v;
+        print "$type ($len bytes): $key, $v\n";
     }
     $counts->{$type}++;
-    #printf "$len $type %s:\n", $key;
+    printf "$len $type %s:\n", $key;
 }
 
+printf "Stats\n";
 while (my ($k,$v) = each %$counts) {
     print "$k => $v\n";
 }
