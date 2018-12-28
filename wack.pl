@@ -13,6 +13,7 @@ my $db  = tie %wallet, 'BerkeleyDB::Btree',
         -Flags => DB_RDONLY,
     or die  "Cannot open file $filename: $! $BerkeleyDB::Error\n";
 
+my $count  = 0;
 my $counts = {};
 while (my ($k,$v) = each %wallet) {
     my $len  = unpack("W", substr($k, 0, 1));
@@ -56,11 +57,14 @@ while (my ($k,$v) = each %wallet) {
         printf "$vlen $type %s:\n", $key;
     }
     $counts->{$type}++;
+    $count++;
 }
 
 printf "\n=====Wallet Key Stats=====\n";
-my @keys  = sort { $counts->{$b} <=> $counts->{$a} } keys(%$counts);
+my @keys    = sort { $counts->{$b} <=> $counts->{$a} } keys(%$counts);
+my $numkeys = scalar @keys;
 for my $k (@keys) {
     printf "%-25s %s\n", $k, $counts->{$k};
 }
+printf "Total: $count keys in $numkeys key types\n";
 
