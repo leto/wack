@@ -19,6 +19,7 @@ while (my ($k,$v) = each %wallet) {
     my $len  = unpack("W", substr($k, 0, 1));
     my $type = substr $k, 1, $len;
     my $key  = substr $k, $len+1;
+    my $klen = length $key;
     my $vlen = length $v;
 
     #printf "%s => %x\n", $k, $v;
@@ -32,11 +33,12 @@ while (my ($k,$v) = each %wallet) {
             $key = unpack("H*", $key);
             print "key=$key, cscript=$cscript\n";
         } elsif ($type eq 'tx') {
-            my $tx  = unpack("h*", $key);
+            # TODO: this could depend on the platform rendering the data
+            my $tx  = reverse(unpack("h*", $key));
             my $vtx = unpack("h*", $v);
             my $l   = length($tx);
             my $lvtx= length($vtx);
-            print "len=$l tx=$tx, $vtx ($lvtx bytes)\n";
+            print "len=$l tx=$tx ($lvtx bytes)\n";
         } elsif ($type eq 'defaultkey') {
             my $dkey = unpack("H*", $v);
             print "defaultkey=$dkey\n";
@@ -47,18 +49,17 @@ while (my ($k,$v) = each %wallet) {
         } elsif ($type eq 'name') {
             print "name: $key, $v\n";
         } elsif ($type eq 'bestblock') {
-            my $len = length $v;
-            print "bestblock ($len bytes):\nbestblock: $key, $v\n";
+            my $v = unpack("H*", $v);
+            print "$type ($klen,$vlen): ($key => $v)\n";
         } elsif ($type eq 'version') {
             my $len = length $v;
             my $version = unpack("I", $v);
             print "version ($len bytes): $version\n";
-        } else {
-            my $len = length $v;
-            my $v   = unpack("I", $v);
-            print "$type ($len bytes): $key, $v\n";
+        } elsif ($type eq 'watchs') {
+            my $key = unpack("H*", $key);
+            print "$type ($klen,$vlen): ($key => $v)\n";
         }
-        printf "$vlen $type %s:\n", $key;
+        #printf "$type %s:\n", $key;
     }
     $counts->{$type}++;
     $count++;
