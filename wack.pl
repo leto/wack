@@ -27,6 +27,10 @@ while (my ($k,$v) = each %wallet) {
             my $privkey = unpack("H*", $v);
             $key = unpack("H*", $key);
             print "key=$key, privkey=$privkey\n";
+        } elsif ($type eq 'cscript') {
+            my $cscript = unpack("H*", $v);
+            $key = unpack("H*", $key);
+            print "key=$key, cscript=$cscript\n";
         } elsif ($type eq 'tx') {
             my $tx  = unpack("h*", $key);
             my $vtx = unpack("h*", $v);
