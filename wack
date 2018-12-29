@@ -7,6 +7,7 @@ use BerkeleyDB;
 my $DEBUG = $ENV{DEBUG} || 0;
 my %wallet;
 my $filename = shift || 'wallet.dat';
+my $filesize = -s $filename;
 my $db  = tie %wallet, 'BerkeleyDB::Btree',
         -Filename => $filename,
         -Subname  => "main",
@@ -25,8 +26,9 @@ sub is_zec_prefix { $_[0] eq 't1' or $_[0] eq 't3' }
 sub is_kmd_prefix { $_[0] eq 'R' or $_[0] eq 'b'   }
 sub detect_coin {
     my ($c,$meta)  = @_;
-    my $coin = "BTC";
-    print "PREFIX=" . $meta->{prefix} . "\n";
+    my $coin       = "BTC";
+
+    print "Address Prefix=" . $meta->{prefix} . "\n";
     my $prefix = $meta->{prefix};
     my $p1 = substr($prefix, 0, 1);
 
@@ -107,7 +109,7 @@ while (my ($k,$v) = each %wallet) {
 }
 $avg_xtn_size = $counts->{tx} ? $avg_xtn_size / $counts->{tx} : 0;
 
-printf "\n=====Wallet $filename Stats=====\n";
+printf "\n===== Wallet $filename Stats =====\n";
 my @keys    = sort { $counts->{$b} <=> $counts->{$a} } keys(%$counts);
 my $numkeys = scalar @keys;
 for my $k (@keys) {
@@ -117,7 +119,7 @@ for my $k (@keys) {
         printf "%-25s %s\n", $k, $counts->{$k};
     }
 }
-printf "Total: $count keys in $numkeys key types\n";
+printf "Total: $count keys in $numkeys key types ($filesize bytes on disk)\n";
 my $coin = detect_coin($counts,$meta);
 print "Coin detection: $coin\n";
 
