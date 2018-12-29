@@ -13,8 +13,36 @@ my $db  = tie %wallet, 'BerkeleyDB::Btree',
         -Flags => DB_RDONLY,
     or die  "Cannot open file $filename: $! $BerkeleyDB::Error\n";
 
-my $count  = 0;
-my $counts = {};
+my $count        = 0;
+my $counts       = {};
+my $avg_xtn_size = 0;
+my $meta         = {};
+
+# guess the coin a wallet.dat came from
+sub detect_coin {
+    my ($c,$meta)  = @_;
+    my $coin = "";
+    print "PREFIX=" . $meta->{prefix} . "\n";
+    my $p1 = substr($meta->{prefix}, 0, 1);
+    # only sapling-enabled coins have these keys
+    if ($c->{sapzkey} or $c->{sapzkeymeta}) {
+        if ($meta->{prefix} eq 't1') {
+            $coin = "ZEC Sapling";
+        } elsif ($p1 eq 'R') {
+            $coin = "KMD Sapling";
+        }
+    # only zcash forks have these
+    } elsif ($c->{zkey} or $c->{zkeymeta}) {
+        if ($meta->{prefix} eq 't1') {
+            $coin = "ZEC/HUSH Sprout";
+        } elsif ($p1 eq 'R') {
+            $coin = "KMD Sprout";
+        }
+    } else {
+        $coin = "BTC";
+    }
+}
+
 while (my ($k,$v) = each %wallet) {
     my $len  = unpack("W", substr($k, 0, 1));
     my $type = substr $k, 1, $len;
@@ -39,6 +67,7 @@ while (my ($k,$v) = each %wallet) {
             my $l   = length($tx);
             my $lvtx= length($vtx);
             print "len=$l tx=$tx ($lvtx bytes)\n";
+            $avg_xtn_size += $vlen;
         } elsif ($type eq 'defaultkey') {
             my $dkey = unpack("H*", $v);
             print "defaultkey=$dkey\n";
@@ -58,18 +87,33 @@ while (my ($k,$v) = each %wallet) {
         } elsif ($type eq 'watchs') {
             my $key = unpack("H*", $key);
             print "$type ($klen,$vlen): ($key => $v)\n";
+        } elsif ($type eq 'purpose') {
+            #my $key = unpack("H*", $key);
+            #TODO: what is this prefix byte?
+            my $addr   = substr $k, $len+2;
+            my $prefix = substr $addr, 0, 2;
+            # multiple prefixes should not occur in the same wallet, right?
+            $meta->{prefix} = $prefix;
+            print "$type ($klen,$vlen): ($prefix $addr => $v)\n";
         }
         #printf "$type %s:\n", $key;
     }
     $counts->{$type}++;
     $count++;
 }
+$avg_xtn_size = $counts->{tx} ? $avg_xtn_size / $counts->{tx} : 0;
 
 printf "\n=====Wallet Key Stats=====\n";
 my @keys    = sort { $counts->{$b} <=> $counts->{$a} } keys(%$counts);
 my $numkeys = scalar @keys;
 for my $k (@keys) {
-    printf "%-25s %s\n", $k, $counts->{$k};
+    if ($DEBUG && $k eq 'tx') {
+        printf "%-25s %s (%.2f bytes avg)\n", $k, $counts->{$k}, $avg_xtn_size;
+    } else {
+        printf "%-25s %s\n", $k, $counts->{$k};
+    }
 }
 printf "Total: $count keys in $numkeys key types\n";
+my $coin = detect_coin($counts,$meta);
+print "Coin detection: $coin\n";
 
